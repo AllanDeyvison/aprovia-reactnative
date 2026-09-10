@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "AprovIA",
+    "slug": "aprovia-reactnative",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icone-aprovia.png",
+    "scheme": "aprovia",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F8FC",
+        "foregroundImage": "./assets/images/icone-aprovia.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/icone-aprovia.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F7F8FC",
+          "image": "./assets/images/icone-aprovia.png",
+          "imageWidth": 120
+        }
+      ],
+      "expo-secure-store",
+      "expo-image",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Permitir que o AprovIA use o microfone para ditar mensagens.",
+          "speechRecognitionPermission": "Permitir que o AprovIA reconheça sua fala para preencher mensagens."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "ios": {
+      "icon": "./assets/images/icone-aprovia.png",
+      "supportsTablet": true
+    }
+  }
+}
