@@ -12,7 +12,11 @@
         "backgroundColor": "#F7F8FC",
         "foregroundImage": "./assets/images/icone-aprovia.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.aproviareactnative"
     },
     "web": {
       "output": "static",
@@ -44,7 +48,11 @@
     },
     "ios": {
       "icon": "./assets/images/icone-aprovia.png",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Permitir que o AprovIA reconheça sua fala para preencher mensagens.",
+        "NSMicrophoneUsageDescription": "Permitir que o AprovIA use o microfone para ditar mensagens."
+      }
     }
   }
 }

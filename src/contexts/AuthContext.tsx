@@ -6,6 +6,7 @@ import { AuthService } from "../services/AuthService";
 import { StorageService } from "../services/StorageService";
 import { AuthClientError, authErrorMessage } from "../services/authErrors";
 import { getSessionToken, setSessionToken } from "../services/sessionToken";
+import { onSessionInvalidated } from "../services/api";
 interface AuthContextType {
   user: SessionUser | null;
   isLoading: boolean;
@@ -27,6 +28,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [sessionError, setSessionError] = useState<string | null>(null);
   const persistent = useRef(false);
   const busy = useRef(false);
+  useEffect(() => onSessionInvalidated(() => {
+    setSessionToken(null);
+    persistent.current = false;
+    setUser(null);
+  }), []);
   useEffect(() => {
     let active = true;
     async function restore() {

@@ -44,7 +44,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
     setError(null);
     void Speech.stop();
     if (!user) return;
-    if (chatId) void loadChatMessages(chatId, user.username);
+    if (chatId) void loadChatMessages(chatId);
     else clearCurrentChat();
   }, [chatId, user?.username]);
 
@@ -64,14 +64,14 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
     setMessages([...snapshot, userMessage, assistant]);
 
     try {
-      const result = await ChatService.sendMessage(chatId, messageText, activeModel, user.username, appendToLastMessage);
+      const result = await ChatService.sendMessage(chatId, messageText, activeModel, appendToLastMessage);
       if (!chatId && result.chatId) {
         // O tutor que realmente criou o chat passa a pertencer a esse chat antes
         // de qualquer atualização visual do histórico/rota.
         rememberChatModel(result.chatId, activeModel);
         router.replace(`/chat/${encodeURIComponent(result.chatId)}` as any);
       }
-      await refreshChats(user.username);
+      await refreshChats();
     } catch (e) {
       setMessages(snapshot);
       // Em falha, devolve o texto para permitir uma tentativa real sem redigitar.

@@ -20,7 +20,7 @@ Use Node 22 e `npm ci`. Copie `.env.example` para `.env` e configure somente end
 
 ```env
 EXPO_PUBLIC_AUTH_API=http://localhost:8090
-EXPO_PUBLIC_CHAT_API=http://localhost:8000
+EXPO_PUBLIC_API_URL=http://localhost:8000
 ```
 
 No emulador Android, use `10.0.2.2` no lugar de `localhost`. Em aparelho físico, use o IPv4 da máquina na mesma rede e libere as portas no firewall/backend. Nunca coloque senha, token ou segredo em `EXPO_PUBLIC_*`.
@@ -52,11 +52,13 @@ O pacote `expo-speech-recognition` usa config plugin e requer Development Build/
 - `POST /user/signup`
 - `PUT /user/update`
 - `DELETE /user/{id}`
-- `GET /chats?user_id={username}`
-- `GET /chats/{chatId}?user_id={username}`
-- `POST /chats/new?user_id={username}` com `{ message, model }`
-- `POST /chats/{chatId}/add?user_id={username}` com `{ message, model }`
-- `DELETE /chats/{chatId}/delete?user_id={username}`
+- `GET /chats`
+- `GET /chats/{chatId}`
+- `POST /chats/new` com `{ message, model }`
+- `POST /chats/{chatId}/add` com `{ message, model }`
+- `DELETE /chats/{chatId}/delete`
+
+As rotas de chat enviam `Authorization: Bearer <JWT>` e usam o claim `sub` como usuário.
 
 Os IDs internos de tutor não devem ser renomeados: `llama3` e `qwen2-math`.
 

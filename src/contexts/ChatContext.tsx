@@ -18,11 +18,11 @@ interface ChatContextType {
   chatsError: string | null;
   setCurrentChat: (chatId: string | null) => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
-  refreshChats: (userId: string) => Promise<void>;
-  loadChatMessages: (chatId: string, userId: string) => Promise<void>;
+  refreshChats: () => Promise<void>;
+  loadChatMessages: (chatId: string) => Promise<void>;
   addMessage: (message: Message) => void;
   appendToLastMessage: (chunk: string) => void;
-  deleteChat: (chatId: string, userId: string) => Promise<void>;
+  deleteChat: (chatId: string) => Promise<void>;
   clearCurrentChat: () => void;
   changeActiveModel: (model: AprovIAModel) => Promise<void>;
   rememberChatModel: (chatId: string, model: AprovIAModel) => void;
@@ -58,7 +58,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (currentChatId === chatId) setCurrentChatModel(nextModel);
   }, [currentChatId]);
 
-  const enrichChatModel = useCallback(async (chat: Chat, userId: string): Promise<Chat> => {
+  const enrichChatModel = useCallback(async (chat: Chat): Promise<Chat> => {
     const direct = resolveChatModel(chat);
     if (direct) {
       chatModelCacheRef.current.set(chat.chat_id, direct);
@@ -69,7 +69,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (cached) return { ...chat, model: cached };
 
     try {
-      const details = await ChatService.getChatDetails(chat.chat_id, userId);
+      const details = await ChatService.getChatDetails(chat.chat_id);
       const detailedModel = resolveChatModel(details);
       if (detailedModel) {
         chatModelCacheRef.current.set(chat.chat_id, detailedModel);
@@ -81,15 +81,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return chat;
   }, []);
 
-  const refreshChats = useCallback(async (userId: string) => {
+  const refreshChats = useCallback(async () => {
     const requestId = ++refreshRequestRef.current;
     if (mountedRef.current) {
       setIsLoadingChats(true);
       setChatsError(null);
     }
     try {
-      const nextChats = (await ChatService.getChats(userId)) || [];
-      const enriched = await Promise.all(nextChats.map((chat) => enrichChatModel(chat, userId)));
+      const nextChats = (await ChatService.getChats()) || [];
+      const enriched = await Promise.all(nextChats.map(enrichChatModel));
       if (mountedRef.current && requestId === refreshRequestRef.current) {
         // Preserve the order exactly as returned by the backend.
         setChats(enriched);
@@ -113,7 +113,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentChatId, enrichChatModel, setModel]);
 
-  const loadChatMessages = useCallback(async (chatId: string, userId: string) => {
+  const loadChatMessages = useCallback(async (chatId: string) => {
     const requestId = ++messagesRequestRef.current;
     try {
       const cachedModel = chatModelCacheRef.current.get(chatId) ?? null;
@@ -124,7 +124,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (cachedModel) void setModel(cachedModel);
       }
 
-      const raw = await ChatService.getChatDetails(chatId, userId);
+      const raw = await ChatService.getChatDetails(chatId);
       if (!mountedRef.current || requestId !== messagesRequestRef.current) return;
 
       const rawMessages = raw?.messages ?? raw ?? [];
@@ -164,8 +164,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const deleteChat = useCallback(async (chatId: string, userId: string) => {
-    await ChatService.deleteChat(chatId, userId);
+  const deleteChat = useCallback(async (chatId: string) => {
+    await ChatService.deleteChat(chatId);
     chatModelCacheRef.current.delete(chatId);
     if (!mountedRef.current) return;
     setChats((prev) => prev.filter((c) => c.chat_id !== chatId));

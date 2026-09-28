@@ -97,11 +97,11 @@ export function AppShell() {
   const activeChatId = routeChatId ?? currentChatId;
 
   useEffect(() => {
-    if (user?.username) void refreshChats(user.username);
+    if (user?.username) void refreshChats();
   }, [user?.username, refreshChats]);
 
   useEffect(() => {
-    if (open && user?.username) void refreshChats(user.username);
+    if (open && user?.username) void refreshChats();
   }, [open, user?.username, refreshChats]);
 
   const go = (href: "/profile" | "/help") => {
@@ -120,7 +120,7 @@ export function AppShell() {
     const next = !historyExpanded;
     setHistoryExpanded(next);
     setDeleteError(null);
-    if (next && user?.username) void refreshChats(user.username);
+    if (next && user?.username) void refreshChats();
   };
 
   const openChat = (chatId: string) => {
@@ -137,13 +137,13 @@ export function AppShell() {
     setDeleteError(null);
     setDeletingIds((prev) => new Set(prev).add(chatId));
     try {
-      await deleteChat(chatId, user.username);
+      await deleteChat(chatId);
       if (wasActive) {
         clearCurrentChat();
         setOpen(false);
         router.replace("/chat" as any);
       }
-      await refreshChats(user.username);
+      await refreshChats();
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : "Não foi possível excluir a conversa.");
     } finally {
@@ -216,7 +216,7 @@ export function AppShell() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Tentar carregar histórico novamente"
-                  onPress={() => user?.username && void refreshChats(user.username)}
+                  onPress={() => user?.username && void refreshChats()}
                   style={({ pressed }) => [styles.retryButton, { backgroundColor: theme.colors.surfaceVariant, opacity: pressed ? 0.75 : 1 }]}
                 >
                   <RefreshCw size={14} color={theme.colors.text} />
