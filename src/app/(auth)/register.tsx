@@ -5,12 +5,12 @@ import {
   StyleSheet,
   Text,
   Pressable,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Image,
   useWindowDimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Sparkles } from "lucide-react-native";
 import { useAuth } from "../../contexts/AuthContext";
@@ -76,7 +76,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
       <View pointerEvents="none" style={[styles.blobOne, { backgroundColor: theme.dark ? "rgba(124,58,237,0.15)" : "rgba(124,58,237,0.09)" }]} />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboardAvoid}>
+      <KeyboardAvoidingView enabled={Platform.OS === "ios"}  behavior="padding" style={styles.keyboardAvoid}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}

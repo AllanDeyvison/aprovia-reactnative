@@ -5,12 +5,13 @@ import {
   StyleSheet,
   Text,
   Pressable,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Image,
   useWindowDimensions,
+  TextInput
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BookOpenCheck, ShieldCheck, Sparkles } from "lucide-react-native";
 import { authErrorMessage } from "../../services/authErrors";
@@ -58,7 +59,7 @@ export default function LoginScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
       <View pointerEvents="none" style={[styles.blobOne, { backgroundColor: theme.dark ? "rgba(124,58,237,0.16)" : "rgba(124,58,237,0.10)" }]} />
       <View pointerEvents="none" style={[styles.blobTwo, { backgroundColor: theme.dark ? "rgba(59,130,246,0.11)" : "rgba(59,130,246,0.08)" }]} />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboardAvoid}>
+      <KeyboardAvoidingView enabled={Platform.OS === "ios"}  behavior="padding" style={styles.keyboardAvoid}>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={[styles.layout, wide && styles.layoutWide]}>
             <View style={[styles.brandPanel, wide && styles.brandPanelWide]}>
@@ -95,8 +96,34 @@ export default function LoginScreen() {
                 </View>
               ) : null}
 
-              <Input label="Nome de usuário" placeholder="seu_usuario" value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} editable={!isLoading} error={errors.username} />
-              <Input label="Senha" placeholder="••••••••" value={password} onChangeText={setPassword} secureTextEntry editable={!isLoading} error={errors.password} />
+              <Input label="Nome de usuário" placeholder="seu_usuario" value={username} onChangeText={(text) => {setUsername(text); 
+                    if (errors.username) {
+                      setErrors((current) => ({
+                        ...current,
+                        username: undefined,
+                      }));
+                    }
+                    }} autoCapitalize="none" autoCorrect={false}  autoComplete="off" importantForAutofill="no" editable={!isLoading} returnKeyType="next" error={errors.username} />
+              <Input label="Senha" placeholder="••••••••" value={password}  onChangeText={(text) => { setPassword(text);
+                            if (errors.password) {
+                              setErrors((current) => ({
+                                ...current,
+                                password: undefined,
+                              }));
+                            }
+                          }}
+                          secureTextEntry
+                          showPasswordToggle={false}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          autoComplete="off"
+                          importantForAutofill="no"
+                          editable={!isLoading}
+                          returnKeyType="done"
+                          onSubmitEditing={handleLoginPress}
+                          error={errors.password}
+                        />
+
 
               <Pressable
                 accessibilityRole="checkbox"

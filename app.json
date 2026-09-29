@@ -8,6 +8,7 @@
     "scheme": "aprovia",
     "userInterfaceStyle": "automatic",
     "android": {
+      "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "backgroundColor": "#F7F8FC",
         "foregroundImage": "./assets/images/icone-aprovia.png"
@@ -44,7 +45,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     },
     "ios": {
       "icon": "./assets/images/icone-aprovia.png",
