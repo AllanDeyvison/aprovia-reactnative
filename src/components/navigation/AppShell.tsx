@@ -167,11 +167,12 @@ export function AppShell() {
     <View style={[styles.sidebar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
       <View style={styles.brandRow}>
         <View style={styles.brandIdentity}>
-          <Image source={require("../../../assets/images/icone-aprovia.png")} style={styles.brandLogo} resizeMode="contain" accessibilityIgnoresInvertColors />
+          
+          {/* <Image source={require("../../../assets/images/icone-aprovia.png")} style={styles.brandLogo} resizeMode="contain" accessibilityIgnoresInvertColors />
           <View>
             <Text style={[styles.brand, { color: theme.colors.primary }]}>Aprov<Text style={{ color: appearance.accent }}>IA</Text></Text>
             <Text style={[styles.brandCaption, { color: theme.colors.textSecondary }]}>Tutor inteligente</Text>
-          </View>
+          </View> */}
         </View>
         {!persistent ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Fechar menu" hitSlop={10} onPress={() => setOpen(false)} style={[styles.iconButton, { backgroundColor: theme.colors.surfaceVariant }]}>
@@ -348,8 +349,17 @@ export function AppShell() {
               </Pressable>
             ) : <View style={styles.iconPlaceholder} />}
             <View style={styles.headerBrand}>
-              <Text accessibilityRole="header" style={[styles.headerTitle, { color: theme.colors.text }]}>AprovIA</Text>
-              <View style={[styles.statusDot, { backgroundColor: appearance.accent }]} />
+              {/* <Text accessibilityRole="header" style={[styles.headerTitle, { color: theme.colors.text }]}>AprovIA</Text>
+              <View style={[styles.statusDot, { backgroundColor: appearance.accent }]} /> */}
+                    <View style={styles.brandRow}>
+                  <View style={styles.brandIdentity}>
+                    <Image source={require("../../../assets/images/icone-aprovia.png")} style={styles.brandLogo} resizeMode="contain" accessibilityIgnoresInvertColors />
+                    <View>
+                      <Text style={[styles.brand, { color: theme.colors.primary }]}>Aprov<Text style={{ color: appearance.accent }}>IA</Text></Text>
+                      <Text style={[styles.brandCaption, { color: theme.colors.textSecondary }]}>Tutor inteligente</Text>
+                    </View>
+                  </View>
+                </View>
             </View>
             <View style={[styles.modelBadge, { backgroundColor: appearance.soft, borderColor: appearance.border }]}> 
               {activeModel === "qwen2-math" ? <Calculator size={15} color={appearance.accent} /> : <Languages size={15} color={appearance.accent} />}
