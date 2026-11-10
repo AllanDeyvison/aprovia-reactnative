@@ -27,6 +27,7 @@ import {
   MessageSquarePlus,
   Moon,
   RefreshCw,
+  ShieldCheck,
   Sun,
   Trash2,
   UserRound,
@@ -35,7 +36,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Avatar } from "@/components/ui/Avatar";
+import { AuthenticatedAvatar } from "@/components/ui/AuthenticatedAvatar";
 import { getModelAppearance } from "@/utils/modelAppearance";
 import { resolveChatModel } from "@/utils/chatModel";
 
@@ -78,7 +79,7 @@ export function AppShell() {
   const [hoveredChatId, setHoveredChatId] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const { user, handleLogout, isSigningOut } = useAuth();
+  const { user, isAdmin, handleLogout, isSigningOut } = useAuth();
   const {
     chats,
     currentChatId,
@@ -104,7 +105,7 @@ export function AppShell() {
     if (open && user?.username) void refreshChats();
   }, [open, user?.username, refreshChats]);
 
-  const go = (href: "/profile" | "/help") => {
+  const go = (href: "/profile" | "/help" | "/management") => {
     setOpen(false);
     router.push(href as any);
   };
@@ -307,6 +308,7 @@ export function AppShell() {
         ) : null}
 
         <MenuItem label="Perfil" icon={<UserRound size={20} />} active={pathname === "/profile"} onPress={() => go("/profile")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} />
+        {isAdmin ? <MenuItem label="Gerenciamento" icon={<ShieldCheck size={20} />} active={pathname === "/management"} onPress={() => go("/management")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} /> : null}
         <MenuItem label="Ajuda" icon={<CircleHelp size={20} />} active={pathname === "/help"} onPress={() => go("/help")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} />
       </View>
 
@@ -324,7 +326,7 @@ export function AppShell() {
         </Pressable>
 
         <View style={[styles.userCard, { borderColor: theme.colors.border }]}> 
-          <Avatar uri={user?.picture || undefined} initials={initials} size="small" />
+          <AuthenticatedAvatar userId={user?.id} initials={initials} size="small" />
           <View style={styles.userInfo}>
             <Text style={[styles.userName, { color: theme.colors.text }]} numberOfLines={1}>{user?.name || "Usuário"}</Text>
             <Text style={[styles.userHandle, { color: theme.colors.textSecondary }]} numberOfLines={1}>@{user?.username || "usuario"}</Text>

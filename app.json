@@ -36,6 +36,12 @@
       "expo-secure-store",
       "expo-image",
       [
+        "expo-image-picker",
+        {
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-speech-recognition",
         {
           "microphonePermission": "Permitir que o AprovIA use o microfone para ditar mensagens.",

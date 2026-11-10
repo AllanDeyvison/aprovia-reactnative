@@ -46,7 +46,9 @@ authApi.interceptors.request.use(config => {
   const publicRoute = config.url === "/user/login" || config.url === "/user/signup";
   config.headers.delete("Authorization");
   if (!publicRoute) config.headers.set("Authorization", `Bearer ${requireAccessToken()}`);
-  config.headers.set("Content-Type", "application/json");
+  const isFormData = typeof FormData !== "undefined" && config.data instanceof FormData;
+  if (isFormData) config.headers.delete("Content-Type");
+  else config.headers.set("Content-Type", "application/json");
   return config;
 });
 

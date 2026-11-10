@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { ModelProvider } from "@/contexts/ModelContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ProfilePictureProvider } from "@/contexts/ProfilePictureContext";
 
 export default function RootLayout() {
   return (
@@ -16,6 +17,7 @@ export default function RootLayout() {
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <ThemeProvider>
           <AuthProvider>
+            <ProfilePictureProvider>
             <ModelProvider>
               <ChatProvider>
                 <Stack screenOptions={{ headerShown: false }}>
@@ -25,6 +27,7 @@ export default function RootLayout() {
                 </Stack>
               </ChatProvider>
             </ModelProvider>
+            </ProfilePictureProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>

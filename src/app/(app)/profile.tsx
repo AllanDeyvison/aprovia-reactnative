@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ShieldCheck, Trash2, UserRound } from "lucide-react-native";
+import { ImagePlus, ShieldCheck, Trash2 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { AuthService } from "@/services/AuthService";
@@ -11,9 +11,13 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { User } from "@/models/User";
+import { ProfilePictureService, type ProfilePictureAsset } from "@/services/ProfilePictureService";
+import { AuthenticatedAvatar } from "@/components/ui/AuthenticatedAvatar";
+import { useProfilePicture } from "@/contexts/ProfilePictureContext";
 
 export default function ProfileScreen() {
-  const { user, handleUpdateUser, handleDeleteUser, isLoading } = useAuth();
+  const { user, handleUpdateUser, handleDeleteUser, handleProfilePictureUpdated, isLoading } = useAuth();
+  const { invalidatePicture } = useProfilePicture();
   const { theme } = useTheme();
   const router = useRouter();
   const [profile, setProfile] = useState<User | null>(null);
@@ -24,6 +28,9 @@ export default function ProfileScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedPicture, setSelectedPicture] = useState<ProfilePictureAsset | null>(null);
+  const [pictureBusy, setPictureBusy] = useState(false);
+  const [pictureError, setPictureError] = useState<string | null>(null);
 
   const loadProfile = async () => {
     if (!user) return;
@@ -47,11 +54,40 @@ export default function ProfileScreen() {
     try {
       await handleUpdateUser({
         username: profile.username.trim(), name: profile.name.trim(), lastname: profile.lastname.trim(), email: profile.email.trim(),
-        birthday: profile.birthday, picture: profile.picture ?? "", password,
+        birthday: profile.birthday, password,
       });
       setPassword(""); setConfirmPassword(""); setSuccess("Perfil atualizado com sucesso.");
       await loadProfile();
     } catch (error) { setFormError(authErrorMessage(error)); }
+  };
+
+  const selectPicture = async () => {
+    setPictureError(null);
+    try {
+      const asset = await ProfilePictureService.pick();
+      if (!asset) return;
+      setSelectedPicture(asset);
+    } catch (error) { setPictureError(authErrorMessage(error)); }
+  };
+  const uploadPicture = async () => {
+    if (!user || !selectedPicture) return;
+    setPictureBusy(true); setPictureError(null);
+    try {
+      const updated = await ProfilePictureService.upload(user.id, selectedPicture);
+      await handleProfilePictureUpdated(updated);
+      setProfile(updated); setSelectedPicture(null); invalidatePicture();
+    } catch (error) { setPictureError(authErrorMessage(error)); }
+    finally { setPictureBusy(false); }
+  };
+  const removePicture = async () => {
+    if (!user) return;
+    setPictureBusy(true); setPictureError(null);
+    try {
+      const updated = await ProfilePictureService.remove(user.id);
+      await handleProfilePictureUpdated(updated);
+      setProfile(updated); setSelectedPicture(null); invalidatePicture();
+    } catch (error) { setPictureError(authErrorMessage(error)); }
+    finally { setPictureBusy(false); }
   };
 
   const confirmDelete = () => {
@@ -76,23 +112,33 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: theme.colors.background }} contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
-        <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceVariant }]}>
-          {profile.picture ? <Image source={{ uri: profile.picture }} style={styles.avatarImage} /> : <UserRound size={34} color={theme.colors.primary} />}
-        </View>
+        {selectedPicture ? <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceVariant }]}><Image source={{ uri: selectedPicture.uri }} style={styles.avatarImage} /></View> : <AuthenticatedAvatar userId={user?.id} initials={(profile.name || profile.username).slice(0, 2).toUpperCase()} size="large" />}
         <View style={{ flex: 1 }}><Text style={[styles.title, { color: theme.colors.text }]}>Seu perfil</Text><Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Atualize seus dados usando as mesmas regras do AprovIA Web.</Text></View>
       </View>
 
       <Card variant="elevated" style={styles.card}>
+        <View style={styles.sectionTitleRow}><ImagePlus size={18} color={theme.colors.primary} /><Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Foto de perfil</Text></View>
+        <Text style={[styles.photoHelp, { color: theme.colors.textSecondary }]}>Envie PNG, JPEG ou WebP de até 5 MB.</Text>
+        {selectedPicture ? <Text style={[styles.photoName, { color: theme.colors.text }]} numberOfLines={1}>Prévia: {selectedPicture.fileName || "imagem selecionada"}</Text> : null}
+        {pictureError ? <Text accessibilityRole="alert" style={[styles.feedback, { color: theme.colors.error }]}>{pictureError}</Text> : null}
+        <View style={styles.photoActions}>
+          <Button title={selectedPicture ? "Escolher outra foto" : "Escolher foto"} variant="secondary" disabled={pictureBusy} onPress={() => void selectPicture()} style={styles.photoButton} />
+          {selectedPicture ? <Button title="Enviar foto" loading={pictureBusy} onPress={() => void uploadPicture()} style={styles.photoButton} /> : null}
+          {selectedPicture ? <Button title="Cancelar" variant="secondary" disabled={pictureBusy} onPress={() => setSelectedPicture(null)} style={styles.photoButton} /> : null}
+          {profile.picture ? <Button title="Remover foto" variant="danger" loading={pictureBusy && !selectedPicture} onPress={() => void removePicture()} style={styles.photoButton} /> : null}
+        </View>
+      </Card>
+
+      <Card variant="elevated" style={styles.card}>
         <View style={styles.sectionTitleRow}><ShieldCheck size={18} color={theme.colors.primary} /><Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dados pessoais</Text></View>
         <View style={styles.grid}>
-          <Input label="Nome" value={profile.name} onChangeText={(v) => update("name", v)} style={styles.field} />
-          <Input label="Sobrenome" value={profile.lastname} onChangeText={(v) => update("lastname", v)} style={styles.field} />
-          <Input label="Nome de usuário" autoCapitalize="none" value={profile.username} onChangeText={(v) => update("username", v)} style={styles.field} />
-          <Input label="E-mail" autoCapitalize="none" keyboardType="email-address" value={profile.email} onChangeText={(v) => update("email", v)} style={styles.field} />
-          <Input label="URL da foto (opcional)" autoCapitalize="none" value={profile.picture ?? ""} onChangeText={(v) => update("picture", v)} style={styles.field} />
+          <Input label="Nome" value={profile.name} onChangeText={(v) => update("name", v)} containerStyle={styles.field} />
+          <Input label="Sobrenome" value={profile.lastname} onChangeText={(v) => update("lastname", v)} containerStyle={styles.field} />
+          <Input label="Nome de usuário" autoCapitalize="none" value={profile.username} onChangeText={(v) => update("username", v)} containerStyle={styles.field} />
+          <Input label="E-mail" autoCapitalize="none" keyboardType="email-address" value={profile.email} onChangeText={(v) => update("email", v)} containerStyle={styles.field} />
           <View style={styles.field}><Text style={[styles.readonlyLabel, { color: theme.colors.text }]}>Data de nascimento</Text><View style={[styles.readonly, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.border }]}><Text style={{ color: theme.colors.textSecondary }}>{profile.birthday}</Text></View></View>
-          <Input label="Senha atual/nova senha" secureTextEntry value={password} onChangeText={setPassword} style={styles.field} />
-          <Input label="Confirmar senha" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} style={styles.field} />
+          <Input label="Senha atual/nova senha" secureTextEntry value={password} onChangeText={setPassword} containerStyle={styles.field} />
+          <Input label="Confirmar senha" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} containerStyle={styles.field} />
         </View>
         {formError ? <Text accessibilityRole="alert" style={[styles.feedback, { color: theme.colors.error }]}>{formError}</Text> : null}
         {success ? <Text accessibilityRole="alert" style={[styles.feedback, { color: theme.colors.success }]}>{success}</Text> : null}
@@ -110,8 +156,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   page: { width: "100%", maxWidth: 940, alignSelf: "center", padding: 24, gap: 18 }, center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
-  header: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 2 }, avatar: { width: 64, height: 64, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" }, avatarImage: { width: "100%", height: "100%" },
+  header: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 2 }, avatar: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", overflow: "hidden" }, avatarImage: { width: "100%", height: "100%" },
   title: { fontSize: 30, fontWeight: "900", letterSpacing: -0.6 }, subtitle: { fontSize: 14, lineHeight: 20, marginTop: 3 }, card: { padding: 22 }, sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 18 }, sectionTitle: { fontSize: 18, fontWeight: "850" as any },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 }, field: { flexGrow: 1, flexBasis: 310, marginBottom: 0 }, readonlyLabel: { fontSize: 14, fontWeight: "700", marginBottom: 7 }, readonly: { minHeight: 54, borderWidth: 1, borderRadius: 16, paddingHorizontal: 15, justifyContent: "center" },
-  feedback: { fontWeight: "700", marginVertical: 12 }, dangerCard: { marginBottom: 22 }, dangerText: { lineHeight: 21, marginBottom: 16 }, error: { textAlign: "center", fontWeight: "700" },
+  feedback: { fontWeight: "700", marginVertical: 12 }, photoHelp: { lineHeight: 20, marginBottom: 12 }, photoName: { fontWeight: "700", marginBottom: 12 }, photoActions: { flexDirection: "row", flexWrap: "wrap", gap: 10 }, photoButton: { flexGrow: 1, flexBasis: 150 }, dangerCard: { marginBottom: 22 }, dangerText: { lineHeight: 21, marginBottom: 16 }, error: { textAlign: "center", fontWeight: "700" },
 });

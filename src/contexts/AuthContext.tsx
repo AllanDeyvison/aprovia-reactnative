@@ -1,14 +1,17 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { toSessionUser, type SessionUser } from "../models/User";
+import { toSessionUser, type SessionUser, type User } from "../models/User";
 import type { SignupRequest, UpdateUserRequest } from "../models/UserLogin";
 import { AuthService } from "../services/AuthService";
 import { StorageService } from "../services/StorageService";
 import { AuthClientError, authErrorMessage } from "../services/authErrors";
 import { getSessionToken, setSessionToken } from "../services/sessionToken";
 import { onSessionInvalidated } from "../services/api";
+import { UserType } from "../models/UserType";
+import { ProfilePictureService, type ProfilePictureAsset } from "../services/ProfilePictureService";
 interface AuthContextType {
   user: SessionUser | null;
+  isAdmin: boolean;
   isLoading: boolean;
   isRestoring: boolean;
   isSigningOut: boolean;
@@ -16,8 +19,11 @@ interface AuthContextType {
   handleLogin: (username: string, password: string, keepConnected: boolean) => Promise<void>;
   handleLogout: () => Promise<void>;
   handleSignup: (data: SignupRequest) => Promise<void>;
+  handleSignupAndLogin: (data: SignupRequest, picture: ProfilePictureAsset | null, onProgress: (message: string) => void) => Promise<{ pictureError: string | null }>;
+  completePendingSignupLogin: () => Promise<void>;
   handleUpdateUser: (data: Omit<UpdateUserRequest, "id">) => Promise<void>;
   handleDeleteUser: () => Promise<void>;
+  handleProfilePictureUpdated: (profile: User) => Promise<void>;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -26,11 +32,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const isAdmin = user?.role === UserType.ADMIN;
   const persistent = useRef(false);
   const busy = useRef(false);
+  const pendingSignupSession = useRef<SessionUser | null>(null);
   useEffect(() => onSessionInvalidated(() => {
     setSessionToken(null);
     persistent.current = false;
+    pendingSignupSession.current = null;
     setUser(null);
   }), []);
   useEffect(() => {
@@ -60,16 +69,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     void restore();
     return () => { active = false; setSessionToken(null); };
   }, []);
-  const perform = useCallback(async (action: () => Promise<void>) => {
+  const perform = useCallback(async <T,>(action: () => Promise<T>): Promise<T> => {
     if (busy.current || isRestoring) throw new AuthClientError("Aguarde a operação em andamento.");
     busy.current = true;
     setIsLoading(true);
     setSessionError(null);
-    try { await action(); }
+    try { return await action(); }
     finally { busy.current = false; setIsLoading(false); }
   }, [isRestoring]);
   const handleLogin = (username: string, password: string, keepConnected: boolean) => perform(async () => {
     setSessionToken(null);
+    pendingSignupSession.current = null;
     setUser(null);
     const session = await AuthService.login(username.trim(), password);
     const profile = toSessionUser(session);
@@ -87,8 +97,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     persistent.current = false;
     setUser(null);
   });
+  const handleSignupAndLogin = (data: SignupRequest, picture: ProfilePictureAsset | null, onProgress: (message: string) => void) => perform(async () => {
+    onProgress("Criando conta");
+    await AuthService.signup(data);
+    onProgress("Entrando");
+    let session;
+    try { session = await AuthService.login(data.username.trim(), data.password); }
+    catch { throw new AuthClientError("Conta criada. Faça login para continuar"); }
+    setSessionToken(session.token);
+    let profile: User = session;
+    let pictureError: string | null = null;
+    if (picture) {
+      onProgress("Enviando foto");
+      try { profile = await ProfilePictureService.upload(session.id, picture); }
+      catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) throw error;
+        pictureError = "Conta criada, mas não foi possível enviar sua foto. Você pode tentar novamente no Perfil";
+      }
+    }
+    const sessionUser = toSessionUser(profile);
+    await StorageService.clearSession();
+    persistent.current = false;
+    if (pictureError) pendingSignupSession.current = sessionUser;
+    else setUser(sessionUser);
+    return { pictureError };
+  });
+  const completePendingSignupLogin = async () => {
+    const pending = pendingSignupSession.current;
+    if (!pending || !getSessionToken()) throw new AuthClientError("Entre novamente para continuar.");
+    pendingSignupSession.current = null;
+    setUser(pending);
+  };
   const clearSession = async () => {
     setSessionToken(null);
+    pendingSignupSession.current = null;
     setUser(null);
     persistent.current = false;
     try { await StorageService.clearSession(); }
@@ -114,8 +156,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await AuthService.deleteUser(user.id);
     await clearSession();
   });
-  return <AuthContext.Provider value={{ user, isLoading, isRestoring, isSigningOut, sessionError,
-    handleLogin, handleLogout, handleSignup, handleUpdateUser, handleDeleteUser }}>{children}</AuthContext.Provider>;
+  const handleProfilePictureUpdated = async (profile: User) => {
+    const token = getSessionToken();
+    if (!user || !token || profile.id !== user.id) throw new AuthClientError("Entre novamente para atualizar a foto.");
+    const updated = toSessionUser(profile);
+    if (persistent.current) await StorageService.saveSession(updated, token);
+    setUser(updated);
+  };
+  return <AuthContext.Provider value={{ user, isAdmin, isLoading, isRestoring, isSigningOut, sessionError,
+    handleLogin, handleLogout, handleSignup, handleSignupAndLogin, completePendingSignupLogin, handleUpdateUser, handleDeleteUser, handleProfilePictureUpdated }}>{children}</AuthContext.Provider>;
 };
 export const useAuth = () => {
   const context = useContext(AuthContext);

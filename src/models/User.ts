@@ -1,3 +1,5 @@
+import { isUserType, type UserType } from "./UserType";
+
 export interface User {
   id: number;
   username: string;
@@ -6,14 +8,16 @@ export interface User {
   email: string;
   birthday: string;
   picture: string | null;
+  role: UserType;
 }
-export type SessionUser = Pick<User, "id" | "username" | "name" | "picture">;
+export type SessionUser = Pick<User, "id" | "username" | "name" | "picture" | "role">;
 export function toSessionUser(u: SessionUser): SessionUser {
-  return { id: u.id, username: u.username, name: u.name, picture: u.picture };
+  return { id: u.id, username: u.username, name: u.name, picture: u.picture, role: u.role };
 }
 export function isSessionUser(value: unknown): value is SessionUser {
   if (typeof value !== "object" || value === null) return false;
   const u = value as Record<string, unknown>;
   return Number.isInteger(u.id) && Number(u.id) > 0 && typeof u.username === "string" &&
-    !!u.username && typeof u.name === "string" && (u.picture === null || typeof u.picture === "string");
+    !!u.username && typeof u.name === "string" && (u.picture === null || typeof u.picture === "string") &&
+    isUserType(u.role);
 }

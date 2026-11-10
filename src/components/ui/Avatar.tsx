@@ -1,9 +1,10 @@
 import React from "react";
-import { Image, View, Text, StyleSheet, ViewStyle } from "react-native";
+import { Image, View, Text, StyleSheet, ViewStyle, type ImageSourcePropType } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface AvatarProps {
   uri?: string;
+  source?: ImageSourcePropType;
   initials?: string;
   size?: "small" | "medium" | "large";
   style?: ViewStyle;
@@ -11,6 +12,7 @@ interface AvatarProps {
 
 export const Avatar: React.FC<AvatarProps> = ({
   uri,
+  source,
   initials,
   size = "medium",
   style,
@@ -43,9 +45,9 @@ export const Avatar: React.FC<AvatarProps> = ({
         style,
       ]}
     >
-      {uri ? (
+      {source || uri ? (
         <Image
-          source={{ uri }}
+          source={source ?? { uri }}
           style={{
             width: sizeStyles.width,
             height: sizeStyles.height,

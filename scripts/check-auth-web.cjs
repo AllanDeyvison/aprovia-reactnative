@@ -102,7 +102,8 @@ const record = label => console.log('PASS: ' + label);
       legacyUser: localStorage.getItem('@aprovia_user'),
       legacyToken: localStorage.getItem('@aprovia_token')
     }));
-    assert.deepEqual(Object.keys(persisted.user).sort(), ['id', 'name', 'picture', 'username']);
+    assert.deepEqual(Object.keys(persisted.user).sort(), ['id', 'name', 'picture', 'role', 'username']);
+    assert.equal(persisted.user.role, 'USER');
     assert(persisted.token && !persisted.token.startsWith('Bearer '));
     assert(!JSON.stringify(persisted.user).includes(account.password));
     assert.equal(persisted.legacyUser, null); assert.equal(persisted.legacyToken, null);

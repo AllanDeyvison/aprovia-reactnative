@@ -9,7 +9,7 @@ function publicProfile(value: unknown): User {
   if (typeof data.lastname !== "string" || typeof data.email !== "string" || typeof data.birthday !== "string")
     throw new AuthClientError("Resposta de usuário inválida recebida do servidor.");
   return { id: value.id, username: value.username, name: value.name, picture: value.picture,
-    lastname: data.lastname, email: data.email, birthday: data.birthday };
+    lastname: data.lastname, email: data.email, birthday: data.birthday, role: value.role };
 }
 export const AuthService = {
   async login(username: string, password: string): Promise<LoginResponse> {
