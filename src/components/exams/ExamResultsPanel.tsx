@@ -1,0 +1,10 @@
+import React, { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { ExamService } from "@/services/ExamService";
+import type { ExamAnswerSummary } from "@/models/Exam";
+import { authErrorMessage } from "@/services/authErrors";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+export function ExamResultsPanel({ examId, onClose }: { examId: string; onClose: () => void }) { const {theme}=useTheme(); const [items,setItems]=useState<ExamAnswerSummary[]|null>(null); const [error,setError]=useState<string|null>(null); const load=async()=>{setError(null);try{setItems(await ExamService.allAnswerSummaries(examId));}catch(e){setError(authErrorMessage(e));}}; return <Card style={styles.card}><Text style={[styles.title,{color:theme.colors.text}]}>Resultados — resumo dos registros retornados</Text>{items===null?<Button title="Carregar resultados" onPress={()=>void load()}/>:items.length===0?<Text style={{color:theme.colors.textSecondary}}>Nenhum resumo retornado pela API.</Text>:items.map((item,index)=><View key={`${item.usuario_id??"usuario"}-${item.tentativa??index}`} style={[styles.row,{borderColor:theme.colors.border}]}><Text style={{color:theme.colors.text}}>Usuário: {item.usuario_id??"não informado"}</Text><Text style={{color:theme.colors.textSecondary}}>Tentativa: {item.tentativa??"não informada"} · Data: {item.data??"não informada"}</Text><Text style={{color:theme.colors.textSecondary}}>Nota: {item.nota??"pendente"} · Questões: {item.total_questoes??"—"} · Acertos: {item.acertos??"—"} · Pendências: {Array.isArray(item.pendencias)?item.pendencias.length:item.pendencias??"—"}</Text></View>)}{error?<Text accessibilityRole="alert" style={{color:theme.colors.error}}>{error}</Text>:null}<Text style={{color:theme.colors.textSecondary}}>A API pode limitar esta listagem; não é um total global.</Text><Button title="Fechar" variant="secondary" onPress={onClose}/></Card>; }
+const styles=StyleSheet.create({card:{gap:10},title:{fontSize:17,fontWeight:"900"},row:{gap:3,paddingVertical:9,borderBottomWidth:1}});

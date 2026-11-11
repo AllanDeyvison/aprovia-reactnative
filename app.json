@@ -47,7 +47,8 @@
           "microphonePermission": "Permitir que o AprovIA use o microfone para ditar mensagens.",
           "speechRecognitionPermission": "Permitir que o AprovIA reconheça sua fala para preencher mensagens."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

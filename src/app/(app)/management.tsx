@@ -7,6 +7,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Loading } from "@/components/ui/Loading";
+import { MaterialsPanel } from "@/components/materials/MaterialsPanel";
+import { ExamsPanel } from "@/components/exams/ExamsPanel";
 
 export default function ManagementScreen() {
   const { user, isAdmin, isRestoring } = useAuth();
@@ -32,6 +34,8 @@ export default function ManagementScreen() {
         <Text style={[styles.description, { color: theme.colors.textSecondary }]}>{user.name || user.username} (@{user.username})</Text>
         <Text style={[styles.description, { color: theme.colors.textSecondary }]}>Os recursos de gerenciamento serão disponibilizados aqui conforme forem integrados ao servidor.</Text>
       </Card>
+      <MaterialsPanel admin />
+      <ExamsPanel />
       <Button title="Voltar para a área comum" onPress={() => router.replace("/chat" as any)} />
     </ScrollView>
   );

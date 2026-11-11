@@ -21,6 +21,9 @@ import {
   CircleHelp,
   History,
   Languages,
+  ClipboardCheck,
+  ChartNoAxesCombined,
+  Library,
   LogOut,
   Menu,
   MessageSquare,
@@ -105,7 +108,7 @@ export function AppShell() {
     if (open && user?.username) void refreshChats();
   }, [open, user?.username, refreshChats]);
 
-  const go = (href: "/profile" | "/help" | "/management") => {
+  const go = (href: "/profile" | "/help" | "/management" | "/materials" | "/exams" | "/dashboard") => {
     setOpen(false);
     router.push(href as any);
   };
@@ -308,6 +311,9 @@ export function AppShell() {
         ) : null}
 
         <MenuItem label="Perfil" icon={<UserRound size={20} />} active={pathname === "/profile"} onPress={() => go("/profile")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} />
+        <MenuItem label="Materiais" icon={<Library size={20} />} active={pathname === "/materials"} onPress={() => go("/materials")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} />
+        <MenuItem label="Provas" icon={<ClipboardCheck size={20} />} active={pathname === "/exams"} onPress={() => go("/exams")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} />
+        <MenuItem label="Meu progresso" icon={<ChartNoAxesCombined size={20} />} active={pathname === "/dashboard"} onPress={() => go("/dashboard")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} />
         {isAdmin ? <MenuItem label="Gerenciamento" icon={<ShieldCheck size={20} />} active={pathname === "/management"} onPress={() => go("/management")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} /> : null}
         <MenuItem label="Ajuda" icon={<CircleHelp size={20} />} active={pathname === "/help"} onPress={() => go("/help")} theme={theme} activeColor={appearance.accent} activeSoft={appearance.soft} />
       </View>
