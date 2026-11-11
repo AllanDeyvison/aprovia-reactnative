@@ -35,7 +35,7 @@ export default function ManagementScreen() {
         <Text style={[styles.description, { color: theme.colors.textSecondary }]}>Os recursos de gerenciamento serão disponibilizados aqui conforme forem integrados ao servidor.</Text>
       </Card>
       <MaterialsPanel admin />
-      <ExamsPanel />
+      <ExamsPanel key={user.id} />
       <Button title="Voltar para a área comum" onPress={() => router.replace("/chat" as any)} />
     </ScrollView>
   );

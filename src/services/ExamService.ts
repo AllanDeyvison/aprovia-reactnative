@@ -5,16 +5,21 @@ import { AuthClientError } from "./authErrors";
 import type { Exam, ExamPayload, ExamQuestion, ExamResult, ExamSubmission, ExamAnswerSummary } from "../models/Exam";
 
 function validate(question: ExamQuestion) {
-  if (!question.id_questao || !question.enunciado || question.peso <= 0) throw new AuthClientError("Cada questão exige ID, enunciado e peso positivo.");
+  if (!question.id_questao.trim() || !question.enunciado.trim() || !Number.isFinite(question.peso) || question.peso <= 0 || !Number.isInteger(question.ordem)) throw new AuthClientError("Cada questão exige ID, enunciado, ordem inteira e peso positivo.");
   if (question.topico && question.topico.length > 80) throw new AuthClientError("O tópico deve ter no máximo 80 caracteres.");
   if (question.tipo === "multipla_escolha") {
     if (!question.opcoes || question.opcoes.length < 2) throw new AuthClientError("Múltipla escolha exige ao menos duas alternativas.");
-    if (!question.resposta_correta_id || !question.opcoes.some((option) => option.id === question.resposta_correta_id)) throw new AuthClientError("Selecione uma alternativa correta existente.");
+    const ids = new Set<string>();
+    for (const option of question.opcoes) { if (!option.id.trim() || !option.texto.trim()) throw new AuthClientError("Cada alternativa precisa de ID e texto."); if (ids.has(option.id)) throw new AuthClientError("Não use IDs de alternativa duplicados."); ids.add(option.id); }
+    if (!question.resposta_correta_id || !ids.has(question.resposta_correta_id)) throw new AuthClientError("Selecione uma alternativa correta existente.");
   }
+  if (question.tipo === "dissertativa" && question.limite_caracteres !== undefined && (!Number.isInteger(question.limite_caracteres) || question.limite_caracteres <= 0)) throw new AuthClientError("O limite de caracteres deve ser um inteiro positivo.");
+  if (question.tipo === "desafio_codigo" && question.casos_de_teste && question.casos_de_teste.some(test => typeof test.entrada !== "string" || typeof test.saida_esperada !== "string")) throw new AuthClientError("Cada caso de teste precisa de entrada e saída esperada.");
 }
 export function validateExam(payload: ExamPayload) {
   if (!payload.titulo.trim() || !payload.contexto.assunto_materia.trim()) throw new AuthClientError("Título e assunto são obrigatórios.");
-  if (payload.configuracoes_teste.tempo_limite_minutos <= 0 || payload.configuracoes_teste.nota_maxima <= 0) throw new AuthClientError("Tempo e nota máxima devem ser positivos.");
+  if (!Number.isInteger(payload.configuracoes_teste.tempo_limite_minutos) || payload.configuracoes_teste.tempo_limite_minutos <= 0 || !Number.isFinite(payload.configuracoes_teste.nota_maxima) || payload.configuracoes_teste.nota_maxima <= 0) throw new AuthClientError("Tempo inteiro e nota máxima devem ser positivos.");
+  if (!payload.questoes.length) throw new AuthClientError("Inclua pelo menos uma questão.");
   const ids = new Set<string>();
   for (const question of payload.questoes) { if (ids.has(question.id_questao)) throw new AuthClientError("Não use IDs de questão duplicados."); ids.add(question.id_questao); validate(question); }
 }

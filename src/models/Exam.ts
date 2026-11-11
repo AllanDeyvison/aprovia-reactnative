@@ -1,7 +1,8 @@
 export type ExamStatus = "RASCUNHO" | "APROVADO" | "ARQUIVADO";
 export type QuestionType = "multipla_escolha" | "dissertativa" | "desafio_codigo";
 export interface ExamOption { id: string; texto: string }
-export interface ExamQuestion { id_questao: string; ordem: number; tipo: QuestionType; peso: number; enunciado: string; topico?: string; opcoes?: ExamOption[]; resposta_correta_id?: string; explicacao_gabarito?: string; chave_correcao?: string; limite_caracteres?: number; linguagem_permitida?: string; codigo_inicial?: string; casos_de_teste?: string }
+export interface ExamTestCase { entrada: string; saida_esperada: string }
+export interface ExamQuestion { id_questao: string; ordem: number; tipo: QuestionType; peso: number; enunciado: string; topico?: string; opcoes?: ExamOption[]; resposta_correta_id?: string; explicacao_gabarito?: string; chave_correcao?: string; limite_caracteres?: number; linguagem_permitida?: string; codigo_inicial?: string; casos_de_teste?: ExamTestCase[] }
 export interface Exam { _id: string; titulo: string; status: ExamStatus; contexto: { assunto_materia: string }; configuracoes_teste: { tempo_limite_minutos: number; nota_maxima: number; permite_refazer: boolean }; total_questoes?: number; questoes?: ExamQuestion[]; usada?: boolean }
 export interface ExamPayload { titulo: string; status: ExamStatus; contexto: { assunto_materia: string }; configuracoes_teste: { tempo_limite_minutos: number; nota_maxima: number; permite_refazer: boolean }; questoes: ExamQuestion[] }
 export interface ExamAnswer { id_questao: string; resposta: string }
