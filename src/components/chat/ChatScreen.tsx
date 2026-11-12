@@ -73,8 +73,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
       }
       await refreshChats();
     } catch (e) {
-      setMessages(snapshot);
-      // Em falha, devolve o texto para permitir uma tentativa real sem redigitar.
+      // Preserve qualquer conteúdo parcial já exibido; a persistência pode ainda estar na fila.
       setText(messageText);
       setError(e instanceof Error ? e.message : "Não foi possível enviar. Tente novamente.");
     } finally {
@@ -167,7 +166,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
         ) : null}
         <View style={[styles.composer, { backgroundColor: theme.colors.surface, borderColor: appearance.border, shadowColor: appearance.accent }]}> 
           <SpeechInputControl
-            disabled={sending || (!!chatId && !currentChatModel)}
+            disabled={sending}
             language={activeModel === "llama3" ? "en-US" : "pt-BR"}
             onTranscript={(transcript) => setText((previous) => previous.trim() ? `${previous.trim()} ${transcript}` : transcript)}
           />
@@ -179,7 +178,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
             multiline
             value={text}
             onChangeText={setText}
-            editable={!sending && (!chatId || !!currentChatModel)}
+            editable={!sending}
             style={[styles.input, { color: theme.colors.text }]}
             returnKeyType={Platform.OS === "web" ? "send" : "default"}
             onKeyPress={(event: any) => {
@@ -192,9 +191,9 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Enviar mensagem"
-            disabled={sending || !text.trim() || (!!chatId && !currentChatModel)}
+            disabled={sending || !text.trim()}
             onPress={send}
-            style={({ pressed }) => [styles.send, { backgroundColor: appearance.accent, opacity: sending || !text.trim() || (!!chatId && !currentChatModel) ? 0.42 : pressed ? 0.82 : 1 }]}
+            style={({ pressed }) => [styles.send, { backgroundColor: appearance.accent, opacity: sending || !text.trim() ? 0.42 : pressed ? 0.82 : 1 }]}
           >
             {sending ? <ActivityIndicator size="small" color="#fff" /> : <Send size={19} color="#fff" />}
           </Pressable>
