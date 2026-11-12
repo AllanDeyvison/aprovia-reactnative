@@ -6,71 +6,9 @@ import { API_URL, chatApi, invalidateSession } from "./api";
 import { AuthClientError } from "./authErrors";
 import { getSessionToken } from "./sessionToken";
 import type { Material, MaterialFile, MaterialFolder } from "../models/Material";
-
-const MAX_BYTES = 50 * 1024 * 1024;
-const segment = (value: string) => encodeURIComponent(value);
-const path = (conteudo: string, nome?: string) => `/materials/${segment(conteudo)}${nome ? `/${segment(nome)}` : ""}`;
-const record = (value: unknown) => value && typeof value === "object" ? value as Record<string, unknown> : {};
-
-function folders(value: unknown): MaterialFolder[] {
-  const source = Array.isArray(value) ? value : Object.values(record(value)).find(Array.isArray);
-  return (Array.isArray(source) ? source : []).map((item) => {
-    if (typeof item === "string") return { conteudo: item };
-    const data = record(item); const conteudo = data.conteudo ?? data.content ?? data.nome ?? data.name;
-    return typeof conteudo === "string" ? { conteudo, quantidade: typeof data.quantidade === "number" ? data.quantidade : undefined } : null;
-  }).filter((item): item is MaterialFolder => item !== null);
-}
-function materials(value: unknown, conteudo: string): Material[] {
-  const source = Array.isArray(value) ? value : Object.values(record(value)).find(Array.isArray);
-  return (Array.isArray(source) ? source : []).map((item) => {
-    if (typeof item === "string") return { conteudo, nome: item };
-    const data = record(item); const nome = data.nome ?? data.name ?? data.filename;
-    return typeof nome === "string" ? { conteudo: typeof data.conteudo === "string" ? data.conteudo : conteudo, nome, tamanho: typeof data.tamanho === "number" ? data.tamanho : typeof data.size === "number" ? data.size : undefined, tipo: typeof data.tipo === "string" ? data.tipo : typeof data.mimeType === "string" ? data.mimeType : undefined } : null;
-  }).filter((item): item is Material => item !== null);
-}
-function checkFile(file: MaterialFile, extension?: string) {
-  if (!file.name) throw new AuthClientError("Escolha um arquivo válido.");
-  if (typeof file.size === "number" && file.size > MAX_BYTES) throw new AuthClientError("O arquivo excede o limite de 50 MiB.");
-  if (extension && !file.name.toLowerCase().endsWith(extension.toLowerCase())) throw new AuthClientError("A substituição deve manter a mesma extensão do arquivo atual.");
-}
-async function formFor(file: MaterialFile) {
-  checkFile(file);
-  const form = new FormData();
-  if (Platform.OS === "web") {
-    const blob = file.file instanceof Blob ? file.file : await (await fetch(file.uri)).blob();
-    if (blob.size > MAX_BYTES) throw new AuthClientError("O arquivo excede o limite de 50 MiB.");
-    form.append("arquivo", blob, file.name);
-  } else form.append("arquivo", { uri: file.uri, name: file.name, type: file.mimeType || "application/octet-stream" } as unknown as Blob);
-  return form;
-}
-export const MaterialService = {
-  async pickFile(): Promise<MaterialFile | null> {
-    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
-    if (result.canceled || !result.assets?.[0]) return null;
-    const asset = result.assets[0]; const file: MaterialFile = { uri: asset.uri, name: asset.name, mimeType: asset.mimeType, size: asset.size, file: asset.file };
-    checkFile(file); return file;
-  },
-  async listFolders() { return folders((await chatApi.get<unknown>("/materials/folders")).data); },
-  async list(conteudo: string) { return materials((await chatApi.get<unknown>("/materials", { params: { conteudo } })).data, conteudo); },
-  async details(conteudo: string, nome: string) { return (await chatApi.get<unknown>(path(conteudo, nome))).data; },
-  async create(conteudo: string, file: MaterialFile) { return (await chatApi.post<unknown>(path(conteudo), await formFor(file))).data; },
-  async replace(conteudo: string, nome: string, file: MaterialFile) {
-    const extension = nome.includes(".") ? `.${nome.split(".").pop()}` : "";
-    checkFile(file, extension); return (await chatApi.put<unknown>(path(conteudo, nome), await formFor(file))).data;
-  },
-  async remove(conteudo: string, nome: string) { await chatApi.delete(path(conteudo, nome)); },
-  async download(conteudo: string, nome: string) {
-    if (Platform.OS === "web") {
-      const blob = (await chatApi.get<Blob>(`${path(conteudo, nome)}/download`, { params: { download: 1 }, responseType: "blob" })).data;
-      const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = nome; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0); return;
-    }
-    const token = getSessionToken();
-    if (!token || !API_URL) throw new AuthClientError("Sua sessão expirou. Entre novamente.");
-    const uri = `${API_URL}${path(conteudo, nome)}/download?download=1`;
-    try {
-      const result = await FileSystem.downloadAsync(uri, `${FileSystem.cacheDirectory}${encodeURIComponent(nome)}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(result.uri);
-      else throw new AuthClientError("Não foi possível abrir o arquivo neste dispositivo.");
-    } catch (error) { if ((error as { status?: number }).status === 401) void invalidateSession(); throw error; }
-  },
-};
+const MAX_BYTES=50*1024*1024;const segment=(value:string)=>encodeURIComponent(value);const path=(conteudo:string,nome?:string)=>`/materials/${segment(conteudo)}${nome?`/${segment(nome)}`:""}`;const record=(value:unknown)=>value&&typeof value==="object"?value as Record<string,unknown>:{};
+function folders(value:unknown):MaterialFolder[]{const source=Array.isArray(value)?value:Object.values(record(value)).find(Array.isArray);return(Array.isArray(source)?source:[]).map(item=>{if(typeof item==="string")return{conteudo:item};const data=record(item),conteudo=data.conteudo??data.content??data.nome??data.name;return typeof conteudo==="string"?{conteudo,quantidade:typeof data.quantidade==="number"?data.quantidade:undefined}:null}).filter((item):item is MaterialFolder=>item!==null)}
+function materials(value:unknown,conteudo:string):Material[]{const source=Array.isArray(value)?value:Object.values(record(value)).find(Array.isArray);return(Array.isArray(source)?source:[]).map(item=>{if(typeof item==="string")return{conteudo,nome:item};const data=record(item),nome=data.nome??data.name??data.filename,tamanho=typeof data.tamanho_bytes==="number"?data.tamanho_bytes:typeof data.tamanho==="number"?data.tamanho:typeof data.size==="number"?data.size:undefined,tipo=typeof data.content_type==="string"?data.content_type:typeof data.tipo==="string"?data.tipo:typeof data.mimeType==="string"?data.mimeType:undefined;return typeof nome==="string"?{conteudo:typeof data.conteudo==="string"?data.conteudo:conteudo,nome,tamanho,tamanho_bytes:tamanho,tipo,content_type:tipo}:null}).filter((item):item is Material=>item!==null)}
+function checkFile(file:MaterialFile,extension?:string){if(!file.name)throw new AuthClientError("Escolha um arquivo válido.");if(typeof file.size==="number"&&file.size>MAX_BYTES)throw new AuthClientError("O arquivo excede o limite de 50 MiB.");if(!extension&&(!file.name.toLowerCase().endsWith(".pdf")||(file.mimeType&&file.mimeType!=="application/pdf")))throw new AuthClientError("Escolha um arquivo PDF válido.");if(extension&&!file.name.toLowerCase().endsWith(extension.toLowerCase()))throw new AuthClientError("A substituição deve manter a mesma extensão do arquivo atual.")}
+async function formFor(file:MaterialFile){checkFile(file);const form=new FormData();if(Platform.OS==="web"){const blob=file.file instanceof Blob?file.file:await(await fetch(file.uri)).blob();if(blob.size>MAX_BYTES)throw new AuthClientError("O arquivo excede o limite de 50 MiB.");form.append("arquivo",blob,file.name)}else form.append("arquivo",{uri:file.uri,name:file.name,type:file.mimeType||"application/pdf"}as unknown as Blob);return form}
+export const MaterialService={async pickFile():Promise<MaterialFile|null>{const result=await DocumentPicker.getDocumentAsync({type:"application/pdf",copyToCacheDirectory:true,multiple:false});if(result.canceled||!result.assets?.[0])return null;const asset=result.assets[0],file:MaterialFile={uri:asset.uri,name:asset.name,mimeType:asset.mimeType,size:asset.size,file:asset.file};checkFile(file);return file},async listFolders(){return folders((await chatApi.get<unknown>("/materials/folders")).data)},async list(conteudo:string){return materials((await chatApi.get<unknown>("/materials",{params:{conteudo}})).data,conteudo)},async details(conteudo:string,nome:string){return(await chatApi.get<unknown>(path(conteudo,nome))).data},async create(conteudo:string,file:MaterialFile){return(await chatApi.post<unknown>(path(conteudo),await formFor(file))).data},async replace(conteudo:string,nome:string,file:MaterialFile){const extension=nome.includes(".")?`.${nome.split(".").pop()}`:"";checkFile(file,extension);return(await chatApi.put<unknown>(path(conteudo,nome),await formFor(file))).data},async remove(conteudo:string,nome:string){await chatApi.delete(path(conteudo,nome))},async download(conteudo:string,nome:string){if(Platform.OS==="web"){const blob=(await chatApi.get<Blob>(`${path(conteudo,nome)}/download`,{params:{download:1},responseType:"blob"})).data,url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=nome;link.click();setTimeout(()=>URL.revokeObjectURL(url),0);return}const token=getSessionToken();if(!token||!API_URL)throw new AuthClientError("Sua sessão expirou. Entre novamente.");const uri=`${API_URL}${path(conteudo,nome)}/download?download=1`;try{const result=await FileSystem.downloadAsync(uri,`${FileSystem.cacheDirectory}${encodeURIComponent(nome)}`,{headers:{Authorization:`Bearer ${token}`}});if(await Sharing.isAvailableAsync())await Sharing.shareAsync(result.uri);else throw new AuthClientError("Não foi possível abrir o arquivo neste dispositivo.")}catch(error){if((error as{status?:number}).status===401)void invalidateSession();throw error}}};

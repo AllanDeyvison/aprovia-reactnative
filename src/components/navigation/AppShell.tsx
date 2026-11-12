@@ -168,7 +168,7 @@ export function AppShell() {
   const initials = (user?.name || user?.username || "U").slice(0, 2).toUpperCase();
 
   const menu = (
-    <View style={[styles.sidebar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
+    <ScrollView style={[styles.sidebar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]} contentContainerStyle={styles.sidebarContent} showsVerticalScrollIndicator>
       <View style={styles.brandRow}>
         <View style={styles.brandIdentity}>
           
@@ -211,6 +211,9 @@ export function AppShell() {
             {isLoadingChats ? <ActivityIndicator size="small" color={appearance.accent} /> : null}
             {historyExpanded ? <ChevronDown size={17} color={appearance.accent} /> : <ChevronRight size={17} color={theme.colors.textSecondary} />}
           </View>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ver histórico completo" onPress={() => { setOpen(false); router.push("/history" as any); }} style={({ pressed }) => [styles.historyPageLink, { opacity: pressed ? 0.7 : 1 }]}>
+          <Text style={{ color: appearance.accent, fontWeight: "800" as any }}>Ver histórico completo</Text>
         </Pressable>
 
         {historyExpanded ? (
@@ -342,7 +345,7 @@ export function AppShell() {
           </Pressable>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 
   return (
@@ -441,7 +444,8 @@ function TutorSwitch({ currentModel, onToggle, isDark, theme }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   root: { flex: 1, flexDirection: "row" },
-  sidebar: { width: 292, height: "100%", borderRightWidth: 1, paddingHorizontal: 16, paddingTop: 18, paddingBottom: 14 },
+  sidebar: { width: 292, borderRightWidth: 1 },
+  sidebarContent: { minHeight: "100%", paddingHorizontal: 16, paddingTop: 18, paddingBottom: 14 },
   brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 62, paddingHorizontal: 5 },
   brandIdentity: { flexDirection: "row", alignItems: "center", gap: 9, flexShrink: 1 },
   brandLogo: { width: 42, height: 42 },
@@ -450,15 +454,16 @@ const styles = StyleSheet.create({
   newChat: { minHeight: 52, borderRadius: 17, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", marginTop: 17, shadowColor: "#7C3AED", shadowOpacity: 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 7 }, elevation: 4 },
   newChatIcon: { width: 32, height: 32, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginRight: 10 },
   newChatText: { color: "#FFFFFF", fontSize: 15, fontWeight: "850" as any },
-  section: { marginTop: 28, gap: 4, flex: 1, minHeight: 0 },
+  section: { marginTop: 28, gap: 4, flexGrow: 0, flexShrink: 0 },
   sectionLabel: { fontSize: 10, fontWeight: "900", letterSpacing: 1.2, marginBottom: 6, paddingHorizontal: 10 },
-  menuBottom: { marginTop: "auto", gap: 7 },
+  menuBottom: { marginTop: 18, gap: 7 },
   menuItem: { minHeight: 48, borderRadius: 14, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 11, position: "relative" },
   menuText: { fontSize: 14, fontWeight: "700", flexShrink: 1 },
   activePill: { position: "absolute", right: 9, width: 5, height: 5, borderRadius: 3 },
   historyActions: { marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 7 },
-  historyPanel: { marginTop: 2, marginBottom: 5, marginLeft: 5, borderLeftWidth: 1, paddingLeft: 7, maxHeight: 300, flexShrink: 1 },
-  historyScroll: { maxHeight: 260, flexShrink: 1 },
+  historyPanel: { marginTop: 2, marginBottom: 5, marginLeft: 5, borderLeftWidth: 1, paddingLeft: 7, maxHeight: 300 },
+  historyScroll: { maxHeight: 260 },
+  historyPageLink: { minHeight: 34, justifyContent: "center", paddingHorizontal: 12 },
   historyList: { paddingVertical: 3, gap: 3 },
   historyItem: { minHeight: 58, borderRadius: 13, borderWidth: 1, paddingLeft: 4, paddingRight: 5, flexDirection: "row", alignItems: "center", gap: 3, position: "relative", overflow: "hidden" },
   historyMainArea: { flex: 1, minWidth: 0, alignSelf: "stretch", justifyContent: "center", paddingLeft: 6, paddingVertical: 7, borderRadius: 11 },

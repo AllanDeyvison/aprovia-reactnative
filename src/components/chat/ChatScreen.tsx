@@ -29,7 +29,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
   const router = useRouter();
   const {
     currentMessages, currentChatModel, activeModel, setMessages, loadChatMessages, clearCurrentChat,
-    appendToLastMessage, refreshChats, rememberChatModel, isLoadingMessages,
+    appendToLastMessage, refreshChats, rememberChatModel, isLoadingMessages, messagesError,
   } = useChat();
   const appearance = getModelAppearance(activeModel, isDark);
   const [text, setText] = useState("");
@@ -39,18 +39,23 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
   const listRef = useRef<FlatList<Message>>(null);
   const inputRef = useRef<TextInput>(null);
   const userNearBottom = useRef(true);
+  const loadedRoute = useRef<string | null>(null);
 
   useEffect(() => {
     setError(null);
     void Speech.stop();
     if (!user) return;
+    const routeKey = chatId ? `${user.id}:${chatId}` : `${user.id}:new`;
+    if (loadedRoute.current === routeKey) return;
+    loadedRoute.current = routeKey;
     if (chatId) void loadChatMessages(chatId);
     else clearCurrentChat();
-  }, [chatId, user?.username]);
+  }, [chatId, user?.id]);
 
   const send = async () => {
     const messageText = text.trim();
     if (!user || !messageText || sendingRef.current) return;
+    if (chatId && !currentChatModel) { setError("Esta conversa antiga não possui tutor identificado. Escolha explicitamente um tutor em um fluxo suportado pelo servidor antes de continuar."); return; }
     sendingRef.current = true;
     setSending(true);
     setError(null);
@@ -152,6 +157,12 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
       )}
 
       <View style={[styles.composerArea, { backgroundColor: theme.colors.background }]}> 
+        {messagesError ? (
+          <View accessibilityRole="alert" style={[styles.errorRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.error }]}>
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>{messagesError}</Text>
+            <Text style={[styles.retryHint, { color: theme.colors.textSecondary }]}>Você pode tentar abrir esta conversa novamente pelo histórico.</Text>
+          </View>
+        ) : null}
         {!isLoadingMessages && chatId && !currentChatModel ? (
           <View accessibilityRole="alert" style={[styles.errorRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.warning }]}>
             <Text style={[styles.errorText, { color: theme.colors.warning }]}>Tutor deste chat não identificado pelo backend.</Text>
@@ -191,9 +202,9 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Enviar mensagem"
-            disabled={sending || !text.trim()}
+            disabled={sending || !text.trim() || Boolean(chatId && !currentChatModel)}
             onPress={send}
-            style={({ pressed }) => [styles.send, { backgroundColor: appearance.accent, opacity: sending || !text.trim() ? 0.42 : pressed ? 0.82 : 1 }]}
+            style={({ pressed }) => [styles.send, { backgroundColor: appearance.accent, opacity: sending || !text.trim() || Boolean(chatId && !currentChatModel) ? 0.42 : pressed ? 0.82 : 1 }]}
           >
             {sending ? <ActivityIndicator size="small" color="#fff" /> : <Send size={19} color="#fff" />}
           </Pressable>
