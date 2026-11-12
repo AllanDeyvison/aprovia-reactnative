@@ -29,12 +29,13 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
   const router = useRouter();
   const {
     currentMessages, currentChatModel, activeModel, setMessages, loadChatMessages, clearCurrentChat,
-    appendToLastMessage, refreshChats, rememberChatModel, isLoadingMessages, messagesError,
+    appendToLastMessage, refreshChats, rememberChatModel, isLoadingMessages, messagesError, setExistingChatModel,
   } = useChat();
   const appearance = getModelAppearance(activeModel, isDark);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savingTutor, setSavingTutor] = useState(false);
   const sendingRef = useRef(false);
   const listRef = useRef<FlatList<Message>>(null);
   const inputRef = useRef<TextInput>(null);
@@ -165,8 +166,9 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
         ) : null}
         {!isLoadingMessages && chatId && !currentChatModel ? (
           <View accessibilityRole="alert" style={[styles.errorRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.warning }]}>
-            <Text style={[styles.errorText, { color: theme.colors.warning }]}>Tutor deste chat não identificado pelo backend.</Text>
-            <Text style={[styles.retryHint, { color: theme.colors.textSecondary }]}>Selecione o tutor pelo controle lateral antes de enviar para evitar usar o modelo errado.</Text>
+            <Text style={[styles.errorText, { color: theme.colors.warning }]}>Escolha o tutor desta conversa</Text>
+            <Text style={[styles.retryHint, { color: theme.colors.textSecondary }]}>A escolha será confirmada antes de liberar o envio.</Text>
+            <View style={styles.tutorChoices}><Pressable disabled={savingTutor} onPress={() => { setSavingTutor(true); void setExistingChatModel(chatId, "llama3").catch(e => setError(e instanceof Error ? e.message : "Não foi possível salvar o tutor.")).finally(() => setSavingTutor(false)); }}><Text style={{ color: appearance.accent }}>Inglês</Text></Pressable><Pressable disabled={savingTutor} onPress={() => { setSavingTutor(true); void setExistingChatModel(chatId, "qwen2-math").catch(e => setError(e instanceof Error ? e.message : "Não foi possível salvar o tutor.")).finally(() => setSavingTutor(false)); }}><Text style={{ color: appearance.accent }}>Matemática</Text></Pressable></View>
           </View>
         ) : null}
         {error ? (
@@ -247,4 +249,5 @@ const styles = StyleSheet.create({
   errorRow: { width: "100%", maxWidth: 920, alignSelf: "center", borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 8 },
   errorText: { fontWeight: "800", fontSize: 12 },
   retryHint: { fontSize: 11, marginTop: 2 },
+  tutorChoices: { flexDirection: "row", gap: 16, marginTop: 8 },
 });
