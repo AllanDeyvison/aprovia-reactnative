@@ -168,7 +168,8 @@ export function AppShell() {
   const initials = (user?.name || user?.username || "U").slice(0, 2).toUpperCase();
 
   const menu = (
-    <ScrollView style={[styles.sidebar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]} contentContainerStyle={styles.sidebarContent} showsVerticalScrollIndicator>
+    <View style={styles.sidebarFrame}>
+    <ScrollView style={[styles.sidebar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]} contentContainerStyle={styles.sidebarContent} showsVerticalScrollIndicator horizontal={false}>
       <View style={styles.brandRow}>
         <View style={styles.brandIdentity}>
           
@@ -346,6 +347,7 @@ export function AppShell() {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 
   return (
@@ -443,8 +445,9 @@ function TutorSwitch({ currentModel, onToggle, isDark, theme }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  root: { flex: 1, flexDirection: "row" },
-  sidebar: { width: 292, borderRightWidth: 1 },
+  root: { flex: 1, flexDirection: "row", overflow: "hidden" },
+  sidebarFrame: { width: 292, flexGrow: 0, flexShrink: 0, minWidth: 0, maxWidth: "100%" },
+  sidebar: { flex: 1, minWidth: 0, borderRightWidth: 1 },
   sidebarContent: { minHeight: "100%", paddingHorizontal: 16, paddingTop: 18, paddingBottom: 14 },
   brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 62, paddingHorizontal: 5 },
   brandIdentity: { flexDirection: "row", alignItems: "center", gap: 9, flexShrink: 1 },
@@ -462,9 +465,9 @@ const styles = StyleSheet.create({
   activePill: { position: "absolute", right: 9, width: 5, height: 5, borderRadius: 3 },
   historyActions: { marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 7 },
   historyPanel: { marginTop: 2, marginBottom: 5, marginLeft: 5, borderLeftWidth: 1, paddingLeft: 7, maxHeight: 300 },
-  historyScroll: { maxHeight: 260 },
-  historyPageLink: { minHeight: 34, justifyContent: "center", paddingHorizontal: 12 },
-  historyList: { paddingVertical: 3, gap: 3 },
+  historyScroll: { maxHeight: 260, width: "100%" },
+  historyList: { paddingVertical: 3, gap: 3, width: "100%" },
+  historyPageLink: { minHeight: 34, justifyContent: "center", paddingHorizontal: 12, maxWidth: "100%" },
   historyItem: { minHeight: 58, borderRadius: 13, borderWidth: 1, paddingLeft: 4, paddingRight: 5, flexDirection: "row", alignItems: "center", gap: 3, position: "relative", overflow: "hidden" },
   historyMainArea: { flex: 1, minWidth: 0, alignSelf: "stretch", justifyContent: "center", paddingLeft: 6, paddingVertical: 7, borderRadius: 11 },
   historyActiveBar: { position: "absolute", left: 0, top: 7, bottom: 7, width: 3, borderRadius: 2 },
@@ -506,5 +509,5 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   modalRoot: { flex: 1, flexDirection: "row" },
   backdrop: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(15,23,42,0.52)" },
-  mobileMenu: { width: 300, maxWidth: "84%", height: "100%" },
+  mobileMenu: { width: 300, maxWidth: "84%", height: "100%", overflow: "hidden" },
 });

@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { ChatService } from "@/services/ChatService";
+import { ChatApiError, ChatService } from "@/services/ChatService";
 import { getModelAppearance } from "@/utils/modelAppearance";
 import { MarkdownMessage } from "./MarkdownMessage";
 import { TtsControls } from "./TtsControls";
@@ -37,6 +37,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [savingTutor, setSavingTutor] = useState(false);
   const sendingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   const listRef = useRef<FlatList<Message>>(null);
   const inputRef = useRef<TextInput>(null);
   const userNearBottom = useRef(true);
@@ -57,6 +58,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
     const messageText = text.trim();
     if (!user || !messageText || sendingRef.current) return;
     if (chatId && !currentChatModel) { setError("Esta conversa antiga não possui tutor identificado. Escolha explicitamente um tutor em um fluxo suportado pelo servidor antes de continuar."); return; }
+    const controller = new AbortController(); abortRef.current = controller;
     sendingRef.current = true;
     setSending(true);
     setError(null);
@@ -70,7 +72,9 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
     setMessages([...snapshot, userMessage, assistant]);
 
     try {
-      const result = await ChatService.sendMessage(chatId, messageText, activeModel, appendToLastMessage);
+      const result = await ChatService.sendMessage(chatId, messageText, activeModel, appendToLastMessage, controller.signal, (knownId) => {
+        if (!chatId) { rememberChatModel(knownId, activeModel); router.replace(`/chat/${encodeURIComponent(knownId)}` as any); }
+      });
       if (!chatId && result.chatId) {
         // O tutor que realmente criou o chat passa a pertencer a esse chat antes
         // de qualquer atualização visual do histórico/rota.
@@ -79,11 +83,16 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
       }
       await refreshChats();
     } catch (e) {
+      if (e instanceof ChatApiError && e.cancelled) {
+        setMessages(previous => { const last = previous[previous.length - 1]; if (!last || last.role !== "assistant") return previous; return last.content ? [...previous.slice(0, -1), { ...last, content: `${last.content}\n\n_Resposta interrompida._` }] : previous.slice(0, -1); });
+        setText(messageText); return;
+      }
       // Preserve qualquer conteúdo parcial já exibido; a persistência pode ainda estar na fila.
       setText(messageText);
       setError(e instanceof Error ? e.message : "Não foi possível enviar. Tente novamente.");
     } finally {
       sendingRef.current = false;
+      abortRef.current = null;
       setSending(false);
       requestAnimationFrame(() => inputRef.current?.focus());
     }
@@ -158,6 +167,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
       )}
 
       <View style={[styles.composerArea, { backgroundColor: theme.colors.background }]}> 
+        {sending ? <View style={styles.waitRow}><Text style={{ color: theme.colors.textSecondary }}>Aguardando resposta do tutor…</Text><Pressable accessibilityRole="button" onPress={() => abortRef.current?.abort()}><Text style={{ color: theme.colors.error, fontWeight: "800" }}>Parar resposta</Text></Pressable></View> : null}
         {messagesError ? (
           <View accessibilityRole="alert" style={[styles.errorRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.error }]}>
             <Text style={[styles.errorText, { color: theme.colors.error }]}>{messagesError}</Text>
@@ -250,4 +260,5 @@ const styles = StyleSheet.create({
   errorText: { fontWeight: "800", fontSize: 12 },
   retryHint: { fontSize: 11, marginTop: 2 },
   tutorChoices: { flexDirection: "row", gap: 16, marginTop: 8 },
+  waitRow: { width: "100%", maxWidth: 920, alignSelf: "center", flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 10, paddingBottom: 6 },
 });
