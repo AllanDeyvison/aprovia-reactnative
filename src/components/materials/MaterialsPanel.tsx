@@ -8,12 +8,12 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-export function MaterialsPanel({ admin = false }: { admin?: boolean }) {
+export function MaterialsPanel({ admin = false, initialFolder }: { admin?: boolean; initialFolder?: string }) {
   const { theme } = useTheme();
   const [folders, setFolders] = useState<MaterialFolder[]>([]); const [selected, setSelected] = useState<string | null>(null); const [items, setItems] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const [file, setFile] = useState<MaterialFile | null>(null);
   const [details, setDetails] = useState<string | null>(null);
-  const loadFolders = async () => { setLoading(true); setError(null); try { const next = await MaterialService.listFolders(); setFolders(next); if (!selected && next[0]) setSelected(next[0].conteudo); } catch (e) { setError(authErrorMessage(e)); } finally { setLoading(false); } };
+  const loadFolders = async () => { setLoading(true); setError(null); try { const next = await MaterialService.listFolders(); setFolders(next); if (!selected) setSelected(next.some(folder => folder.conteudo === initialFolder) ? initialFolder! : next[0]?.conteudo ?? null); } catch (e) { setError(authErrorMessage(e)); } finally { setLoading(false); } };
   const loadItems = async (conteudo: string) => { setLoading(true); setError(null); try { setItems(await MaterialService.list(conteudo)); } catch (e) { setError(authErrorMessage(e)); } finally { setLoading(false); } };
   useEffect(() => { void loadFolders(); }, []);
   useEffect(() => { if (selected) void loadItems(selected); }, [selected]);

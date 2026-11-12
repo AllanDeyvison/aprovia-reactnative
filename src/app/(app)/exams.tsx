@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLocalSearchParams } from "expo-router";
 
 function getResultData(result: ExamResult): ExamResultData { return result.resultado ?? result; }
 function ResultSummary({ result }: { result: ExamResult }) {
@@ -19,6 +20,7 @@ function ResultSummary({ result }: { result: ExamResult }) {
 export default function ExamsScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { examId } = useLocalSearchParams<{ examId?: string }>();
   const [list, setList] = useState<Exam[] | null>(null); const [listError, setListError] = useState<string | null>(null);
   const [history, setHistory] = useState<ExamResult[] | null>(null); const [historyError, setHistoryError] = useState<string | null>(null);
   const [exam, setExam] = useState<Exam | null>(null); const [opening, setOpening] = useState(false); const [attempts, setAttempts] = useState<ExamResult[] | null>(null); const [attemptsError, setAttemptsError] = useState<string | null>(null);
@@ -29,6 +31,7 @@ export default function ExamsScreen() {
   const reload = useCallback(() => { void loadExams(); void loadHistory(); }, [loadExams, loadHistory]);
   useEffect(() => { setExam(null); setResult(null); setAnswers({}); setAttempts(null); reload(); }, [reload, user?.id]);
   const open = async (id: string) => { setOpening(true); setError(null); try { setExam(await ExamService.get(id)); setAnswers({}); setResult(null); setStartedAt(null); setAttempts(null); setAttemptsError(null); } catch (caught) { setError(authErrorMessage(caught)); } finally { setOpening(false); } };
+  useEffect(() => { if (examId) void open(examId); }, [examId]);
   const loadAttempts = async () => { if (!exam) return; setAttemptsError(null); setAttempts(null); try { setAttempts(await ExamService.attempts(exam._id)); } catch (caught) { setAttemptsError(authErrorMessage(caught)); setAttempts([]); } };
   const backToList = () => { setExam(null); setResult(null); setStartedAt(null); setAnswers({}); setError(null); };
   const submit = async () => {
