@@ -29,7 +29,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
   const router = useRouter();
   const {
     currentMessages, currentChatModel, activeModel, setMessages, loadChatMessages, clearCurrentChat,
-    appendToLastMessage, refreshChats, rememberChatModel, isLoadingMessages, messagesError, setExistingChatModel,
+    appendToMessage, associateCurrentChat, refreshChats, rememberChatModel, isLoadingMessages, messagesError, setExistingChatModel,
   } = useChat();
   const appearance = getModelAppearance(activeModel, isDark);
   const [text, setText] = useState("");
@@ -42,13 +42,24 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
   const inputRef = useRef<TextInput>(null);
   const userNearBottom = useRef(true);
   const loadedRoute = useRef<string | null>(null);
+  const activeRequestRef = useRef<{ id: string; userId: string | number; chatId?: string; assistantMessageId: string; buffer: string } | null>(null);
 
   useEffect(() => {
     setError(null);
     void Speech.stop();
-    if (!user) return;
+    if (!user) {
+      activeRequestRef.current = null;
+      abortRef.current?.abort();
+      return;
+    }
     const routeKey = chatId ? `${user.id}:${chatId}` : `${user.id}:new`;
     if (loadedRoute.current === routeKey) return;
+    // A user navigation away from a conversation invalidates its stream. The new-chat
+    // route is allowed to become its server id after X-Chat-ID arrives.
+    if (activeRequestRef.current && (activeRequestRef.current.userId !== user.id || (activeRequestRef.current.chatId && chatId !== activeRequestRef.current.chatId))) {
+      activeRequestRef.current = null;
+      abortRef.current?.abort();
+    }
     loadedRoute.current = routeKey;
     if (chatId) void loadChatMessages(chatId);
     else clearCurrentChat();
@@ -65,16 +76,34 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
     // Limpa antes de aguardar a API para o texto não permanecer no composer
     // enquanto a resposta da IA está sendo processada.
     setText("");
-    const snapshot = currentMessages;
     const now = new Date().toISOString();
-    const userMessage: Message = { role: "user", content: messageText, timestamp: now, user };
-    const assistant: Message = { role: "assistant", content: "", timestamp: now, user };
-    setMessages([...snapshot, userMessage, assistant]);
+    const requestId = `request:${now}:${Math.random().toString(36).slice(2)}`;
+    const userMessage: Message = { id: `user:${requestId}`, role: "user", content: messageText, timestamp: now, user };
+    const assistant: Message = { id: `assistant:${requestId}`, role: "assistant", content: "", timestamp: now, user, isGenerating: true };
+    const request = { id: requestId, userId: user.id, chatId, assistantMessageId: assistant.id, buffer: "" };
+    activeRequestRef.current = request;
+    // One atomic functional update: never capture a stale message array while a history load resolves.
+    setMessages(previous => [...previous, userMessage, assistant]);
 
     try {
-      const result = await ChatService.sendMessage(chatId, messageText, activeModel, appendToLastMessage, controller.signal, (knownId) => {
+      const result = await ChatService.sendMessage(chatId, messageText, activeModel, (chunk) => {
+        if (activeRequestRef.current !== request || user.id !== request.userId) return;
+        request.buffer += chunk;
+        if (!appendToMessage(request.assistantMessageId, chunk)) {
+          // History may have arrived before this chunk. Recreate only this request's
+          // assistant placeholder; never append to an arbitrary last message.
+          setMessages(previous => previous.some(message => message.id === request.assistantMessageId)
+            ? previous
+            : [...previous, { ...assistant, content: request.buffer }]);
+        }
+      }, controller.signal, (knownId) => {
+        if (activeRequestRef.current !== request || user.id !== request.userId) return;
+        request.chatId = knownId;
+        associateCurrentChat(knownId);
         if (!chatId) { rememberChatModel(knownId, activeModel); router.replace(`/chat/${encodeURIComponent(knownId)}` as any); }
       });
+      if (activeRequestRef.current !== request) return;
+      setMessages(previous => previous.map(message => message.id === request.assistantMessageId ? { ...message, isGenerating: false } : message));
       if (!chatId && result.chatId) {
         // O tutor que realmente criou o chat passa a pertencer a esse chat antes
         // de qualquer atualização visual do histórico/rota.
@@ -84,13 +113,15 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
       await refreshChats();
     } catch (e) {
       if (e instanceof ChatApiError && e.cancelled) {
-        setMessages(previous => { const last = previous[previous.length - 1]; if (!last || last.role !== "assistant") return previous; return last.content ? [...previous.slice(0, -1), { ...last, content: `${last.content}\n\n_Resposta interrompida._` }] : previous.slice(0, -1); });
+        if (activeRequestRef.current === request) setMessages(previous => previous.map(message => message.id === request.assistantMessageId && message.role === "assistant" ? { ...message, content: message.content ? `${message.content}\n\n_Resposta interrompida._` : message.content, isGenerating: false } : message));
         setText(messageText); return;
       }
       // Preserve qualquer conteúdo parcial já exibido; a persistência pode ainda estar na fila.
+      if (activeRequestRef.current === request) setMessages(previous => previous.map(message => message.id === request.assistantMessageId ? { ...message, isGenerating: false } : message));
       setText(messageText);
       setError(e instanceof Error ? e.message : "Não foi possível enviar. Tente novamente.");
     } finally {
+      if (activeRequestRef.current === request) activeRequestRef.current = null;
       sendingRef.current = false;
       abortRef.current = null;
       setSending(false);
@@ -105,7 +136,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
   return (
     <KeyboardAvoidingView style={[styles.root, { backgroundColor: theme.colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View pointerEvents="none" style={[styles.accentGlow, { backgroundColor: appearance.soft }]} />
-      {isLoadingMessages ? (
+      {isLoadingMessages && !currentMessages.length ? (
         <View style={styles.center}>
           <View style={[styles.loadingOrb, { backgroundColor: appearance.soft }]}><ActivityIndicator color={appearance.accent} /></View>
           <Text style={{ color: theme.colors.textSecondary, fontWeight: "650" as any }}>Carregando conversa...</Text>
@@ -114,7 +145,7 @@ export function ChatScreen({ chatId }: { chatId?: string }) {
         <FlatList
           ref={listRef}
           data={currentMessages}
-          keyExtractor={(_, i) => `${i}`}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={currentMessages.length ? styles.list : styles.emptyList}
           keyboardShouldPersistTaps="handled"
           onScroll={({ nativeEvent }) => {
