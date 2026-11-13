@@ -49,6 +49,7 @@
         }
       ],
       "expo-sharing"
+      , ["expo-notifications", { "defaultChannel": "aprovia-notifications" }]
     ],
     "experiments": {
       "typedRoutes": true,

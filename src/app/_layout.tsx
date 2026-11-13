@@ -10,6 +10,7 @@ import { ChatProvider } from "@/contexts/ChatContext";
 import { ModelProvider } from "@/contexts/ModelContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProfilePictureProvider } from "@/contexts/ProfilePictureContext";
+import { PushNotificationsProvider } from "@/contexts/PushNotificationsContext";
 
 export default function RootLayout() {
   return (
@@ -17,6 +18,7 @@ export default function RootLayout() {
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <ThemeProvider>
           <AuthProvider>
+            <PushNotificationsProvider>
             <ProfilePictureProvider>
             <ModelProvider>
               <ChatProvider>
@@ -28,6 +30,7 @@ export default function RootLayout() {
               </ChatProvider>
             </ModelProvider>
             </ProfilePictureProvider>
+            </PushNotificationsProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>

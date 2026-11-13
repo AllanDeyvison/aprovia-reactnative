@@ -42,6 +42,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { AuthenticatedAvatar } from "@/components/ui/AuthenticatedAvatar";
 import { getModelAppearance } from "@/utils/modelAppearance";
 import { resolveChatModel } from "@/utils/chatModel";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 
 const WIDE = 900;
 
@@ -378,6 +379,7 @@ export function AppShell() {
               {activeModel === "qwen2-math" ? <Calculator size={15} color={appearance.accent} /> : <Languages size={15} color={appearance.accent} />}
               <Text style={[styles.modelText, { color: appearance.accentStrong }]}>{appearance.label}</Text>
             </View>
+            <NotificationsBell />
           </View>
           <View style={styles.content}><Slot /></View>
         </View>
