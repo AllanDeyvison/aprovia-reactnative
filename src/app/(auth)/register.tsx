@@ -167,9 +167,9 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, overflow: "hidden" },
-  keyboardAvoid: { flex: 1 },
-  scroll: { flex: 1 },
+  container: { flex: 1, minHeight: 0, overflow: "hidden" },
+  keyboardAvoid: { flex: 1, minHeight: 0 },
+  scroll: { flex: 1, minHeight: 0 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 30, paddingBottom: 56 },
   pageHeader: { width: "100%", maxWidth: 850, alignSelf: "center", alignItems: "center", marginBottom: 20 },
   logo: { width: 160, height: 54, marginBottom: 10 },

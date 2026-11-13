@@ -6,13 +6,13 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Slot, usePathname, useRouter } from "expo-router";
 import {
   Calculator,
@@ -75,6 +75,7 @@ async function confirmChatDeletion(title: string) {
 
 export function AppShell() {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const persistent = width >= WIDE;
   const [open, setOpen] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -108,6 +109,9 @@ export function AppShell() {
   useEffect(() => {
     if (open && user?.username) void refreshChats();
   }, [open, user?.username, refreshChats]);
+
+  // Do not retain an old mobile-modal state after crossing to the desktop shell.
+  useEffect(() => { if (persistent) setOpen(false); }, [persistent]);
 
   const go = (href: "/profile" | "/help" | "/management" | "/materials" | "/exams" | "/dashboard") => {
     setOpen(false);
@@ -169,7 +173,7 @@ export function AppShell() {
   const initials = (user?.name || user?.username || "U").slice(0, 2).toUpperCase();
 
   const menu = (
-    <View style={styles.sidebarFrame}>
+    <View style={[styles.sidebarFrame, persistent ? styles.sidebarFrameDesktop : styles.sidebarFrameMobile]}>
     <ScrollView style={[styles.sidebar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]} contentContainerStyle={styles.sidebarContent} showsVerticalScrollIndicator horizontal={false}>
       <View style={styles.brandRow}>
         <View style={styles.brandIdentity}>
@@ -244,7 +248,7 @@ export function AppShell() {
                 <Text style={[styles.historyStateText, { color: theme.colors.textSecondary }]}>Nenhuma conversa ainda.</Text>
               </View>
             ) : (
-              <ScrollView style={styles.historyScroll} contentContainerStyle={styles.historyList} nestedScrollEnabled showsVerticalScrollIndicator>
+              <View style={styles.historyList}>
                 {chats.map((chat) => {
                   const active = activeChatId === chat.chat_id;
                   const deleting = deletingIds.has(chat.chat_id);
@@ -309,7 +313,7 @@ export function AppShell() {
                     </View>
                   );
                 })}
-              </ScrollView>
+              </View>
             )}
             {deleteError ? <Text accessibilityRole="alert" style={[styles.deleteError, { color: theme.colors.error }]}>{deleteError}</Text> : null}
           </View>
@@ -375,11 +379,13 @@ export function AppShell() {
                   </View>
                 </View>
             </View>
-            <View style={[styles.modelBadge, { backgroundColor: appearance.soft, borderColor: appearance.border }]}> 
-              {activeModel === "qwen2-math" ? <Calculator size={15} color={appearance.accent} /> : <Languages size={15} color={appearance.accent} />}
-              <Text style={[styles.modelText, { color: appearance.accentStrong }]}>{appearance.label}</Text>
+            <View style={styles.headerActions}>
+              <View style={[styles.modelBadge, { backgroundColor: appearance.soft, borderColor: appearance.border }]}>
+                {activeModel === "qwen2-math" ? <Calculator size={15} color={appearance.accent} /> : <Languages size={15} color={appearance.accent} />}
+                <Text numberOfLines={1} style={[styles.modelText, { color: appearance.accentStrong }]}>{appearance.label}</Text>
+              </View>
+              <NotificationsBell />
             </View>
-            <NotificationsBell />
           </View>
           <View style={styles.content}><Slot /></View>
         </View>
@@ -389,7 +395,7 @@ export function AppShell() {
         <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
           <View style={styles.modalRoot}>
             <Pressable accessibilityLabel="Fechar menu" style={styles.backdrop} onPress={() => setOpen(false)} />
-            <View style={styles.mobileMenu}>{menu}</View>
+          <View style={[styles.mobileMenu, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>{menu}</View>
           </View>
         </Modal>
       ) : null}
@@ -448,7 +454,9 @@ function TutorSwitch({ currentModel, onToggle, isDark, theme }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   root: { flex: 1, flexDirection: "row", overflow: "hidden" },
-  sidebarFrame: { width: 292, flexGrow: 0, flexShrink: 0, minWidth: 0, maxWidth: "100%" },
+  sidebarFrame: { minWidth: 0, maxWidth: "100%" },
+  sidebarFrameDesktop: { width: 292, flexGrow: 0, flexShrink: 0 },
+  sidebarFrameMobile: { width: "100%", height: "100%", flex: 1 },
   sidebar: { flex: 1, minWidth: 0, borderRightWidth: 1 },
   sidebarContent: { minHeight: "100%", paddingHorizontal: 16, paddingTop: 18, paddingBottom: 14 },
   brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 62, paddingHorizontal: 5 },
@@ -466,8 +474,7 @@ const styles = StyleSheet.create({
   menuText: { fontSize: 14, fontWeight: "700", flexShrink: 1 },
   activePill: { position: "absolute", right: 9, width: 5, height: 5, borderRadius: 3 },
   historyActions: { marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 7 },
-  historyPanel: { marginTop: 2, marginBottom: 5, marginLeft: 5, borderLeftWidth: 1, paddingLeft: 7, maxHeight: 300 },
-  historyScroll: { maxHeight: 260, width: "100%" },
+  historyPanel: { marginTop: 2, marginBottom: 5, marginLeft: 5, borderLeftWidth: 1, paddingLeft: 7 },
   historyList: { paddingVertical: 3, gap: 3, width: "100%" },
   historyPageLink: { minHeight: 34, justifyContent: "center", paddingHorizontal: 12, maxWidth: "100%" },
   historyItem: { minHeight: 58, borderRadius: 13, borderWidth: 1, paddingLeft: 4, paddingRight: 5, flexDirection: "row", alignItems: "center", gap: 3, position: "relative", overflow: "hidden" },
@@ -500,16 +507,17 @@ const styles = StyleSheet.create({
   userHandle: { fontSize: 11, marginTop: 1 },
   logoutButton: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   main: { flex: 1, minWidth: 0 },
-  header: { minHeight: 66, borderBottomWidth: 1, paddingHorizontal: 17, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  headerBrand: { flexDirection: "row", alignItems: "center", gap: 7 },
+  header: { minHeight: 66, borderBottomWidth: 1, paddingHorizontal: 17, paddingVertical: 8, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
+  headerBrand: { flexDirection: "row", alignItems: "center", gap: 7, flex: 1, minWidth: 0, flexShrink: 1 },
   headerTitle: { fontSize: 20, fontWeight: "900", letterSpacing: -0.5 },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
   iconButton: { width: 43, height: 43, alignItems: "center", justifyContent: "center", borderRadius: 14 },
   iconPlaceholder: { width: 43 },
-  modelBadge: { paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 6 },
-  modelText: { fontSize: 12, fontWeight: "850" as any },
+  headerActions: { flexDirection: "row", alignItems: "center", marginLeft: "auto", gap: 8, maxWidth: "100%" },
+  modelBadge: { maxWidth: 150, minWidth: 0, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
+  modelText: { fontSize: 12, fontWeight: "850" as any, flexShrink: 1 },
   content: { flex: 1 },
   modalRoot: { flex: 1, flexDirection: "row" },
   backdrop: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(15,23,42,0.52)" },
-  mobileMenu: { width: 300, maxWidth: "84%", height: "100%", overflow: "hidden" },
+  mobileMenu: { width: 300, maxWidth: "84%", alignSelf: "stretch", overflow: "hidden" },
 });

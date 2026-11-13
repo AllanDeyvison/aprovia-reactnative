@@ -161,9 +161,9 @@ function Benefit({ icon, text, color }: { icon: React.ReactNode; text: string; c
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, overflow: "hidden" },
-  keyboardAvoid: { flex: 1 },
-  scroll: { flex: 1 },
+  container: { flex: 1, minHeight: 0, overflow: "hidden" },
+  keyboardAvoid: { flex: 1, minHeight: 0 },
+  scroll: { flex: 1, minHeight: 0 },
   scrollContent: { flexGrow: 1, justifyContent: "center", paddingHorizontal: 20, paddingVertical: 34 },
   layout: { width: "100%", maxWidth: 1040, alignSelf: "center", gap: 30 },
   layoutWide: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 64 },
