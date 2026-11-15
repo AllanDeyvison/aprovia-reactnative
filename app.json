@@ -20,7 +20,7 @@
       "package": "com.anonymous.aproviareactnative"
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/icone-aprovia.png"
     },
     "plugins": [
