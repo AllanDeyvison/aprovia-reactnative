@@ -7,6 +7,6 @@ export interface Exam { _id: string; titulo: string; status: ExamStatus; context
 export interface ExamPayload { titulo: string; status: ExamStatus; contexto: { assunto_materia: string }; configuracoes_teste: { tempo_limite_minutos: number; nota_maxima: number; permite_refazer: boolean }; questoes: ExamQuestion[] }
 export interface ExamAnswer { id_questao: string; resposta: string }
 export interface ExamSubmission { respostas: ExamAnswer[]; tempo_gasto_segundos: number }
-export interface ExamResultData { nota_obtida?: number | null; nota_maxima?: number | null; acertos?: number | null; total_questoes?: number | null; questoes_pendentes_correcao?: string[]; correcao_concluida?: boolean }
+export interface ExamResultData { nota_obtida?: number | null; nota_maxima?: number | null; acertos?: number | null; total_questoes?: number | null; questoes_pendentes_correcao?: number | string[]; correcao_concluida?: boolean }
 export interface ExamResult extends ExamResultData { resultado?: ExamResultData; tentativa?: number | string; prova_id?: string; [key: string]: unknown }
 export interface ExamAnswerSummary { usuario_id?: string; tentativa?: number | string; data?: string; nota?: number | null; total_questoes?: number; acertos?: number; pendencias?: number | string[]; [key: string]: unknown }

@@ -12,9 +12,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocalSearchParams } from "expo-router";
 
 function getResultData(result: ExamResult): ExamResultData { return result.resultado ?? result; }
+// A API envia a quantidade de questões pendentes; versões antigas enviavam a lista de ids
+function describePending(pending: ExamResultData["questoes_pendentes_correcao"]) { if (Array.isArray(pending)) return pending.join(", "); return typeof pending === "number" && pending > 0 ? `${pending} ${pending === 1 ? "questão" : "questões"}` : ""; }
 function ResultSummary({ result }: { result: ExamResult }) {
   const { theme } = useTheme(); const data = getResultData(result); const partial = data.correcao_concluida === false;
-  return <Card style={styles.result}><Text style={[styles.section, { color: theme.colors.text }]}>Resultado</Text><Text style={{ color: theme.colors.text }}>Nota: {data.nota_obtida ?? "indisponível"} / {data.nota_maxima ?? "indisponível"}{partial ? " (parcial)" : ""}</Text><Text style={{ color: theme.colors.textSecondary }}>Acertos: {data.acertos ?? "indisponível"} de {data.total_questoes ?? "indisponível"}</Text>{partial ? <Text style={{ color: theme.colors.warning }}>Correção pendente: {(data.questoes_pendentes_correcao ?? []).join(", ") || "questões dissertativas ou de código"}</Text> : null}</Card>;
+  return <Card style={styles.result}><Text style={[styles.section, { color: theme.colors.text }]}>Resultado</Text><Text style={{ color: theme.colors.text }}>Nota: {data.nota_obtida ?? "indisponível"} / {data.nota_maxima ?? "indisponível"}{partial ? " (parcial)" : ""}</Text><Text style={{ color: theme.colors.textSecondary }}>Acertos: {data.acertos ?? "indisponível"} de {data.total_questoes ?? "indisponível"}</Text>{partial ? <Text style={{ color: theme.colors.warning }}>Correção pendente: {describePending(data.questoes_pendentes_correcao) || "questões dissertativas ou de código"}</Text> : null}</Card>;
 }
 
 export default function ExamsScreen() {
